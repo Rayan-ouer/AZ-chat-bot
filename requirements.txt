@@ -1,0 +1,9 @@
+uvicorn[standart]
+fastapi
+sqlalchemy==1.4.48
+pymysql==1.0.2
+python-dotenv
+langchain-groq
+langchain
+sqlparse
+cryptography
