@@ -1,13 +1,9 @@
-import os
 import sqlparse
-from sqlalchemy import create_engine
-from table_info import table_info
 from sqlalchemy import text
-from langchain_groq import ChatGroq
 from langchain_core.prompts import BasePromptTemplate
 from langchain_core.prompts import MessagesPlaceholder
 from langchain_core.runnables.history import RunnableWithMessageHistory
-from typing import Optional, Dict, Any, Tuple, List
+from typing import Optional, Dict, Any
 from langchain_core.language_models import BaseLanguageModel
 from langchain_core.chat_history import BaseChatMessageHistory, InMemoryChatMessageHistory
 from langchain_core.messages import AIMessage
@@ -79,9 +75,7 @@ class ChatMemory:
 
     def reset_history(self, session_id: int, max_question: int):
         counter = self._counter_question[session_id]
-        print(f"Count : {counter}, max : {max_question}")
         if counter >= max_question:
-            print("Oui j'ai reset")
             self.clear_history_by_id(session_id)
 
 class IAModel:

@@ -8,9 +8,9 @@ from langchain.memory import ConversationTokenBufferMemory
 from langchain_core.prompts import MessagesPlaceholder
 from langchain_core.prompts import ChatPromptTemplate
 from fastapi import FastAPI, HTTPException, Response, status
-from model import IAModel, ChatMemory
-from prompt import *
-from table_info import table_info
+from app.model import IAModel
+from app.prompt import *
+from app.table_info import table_info
 
 load_dotenv()
 
