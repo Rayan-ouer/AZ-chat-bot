@@ -5,6 +5,7 @@ table_info = {
             "id": "Product ID",
             "code": "Product code",
             "name": "Name",
+            "category_id": "Category Product ID",
             "cost_price": "Cost",
             "sale_price": "Price",
             "stock_min": "Min stock",
@@ -96,6 +97,7 @@ table_info = {
     "item_categories": {
         "description": "Product categories",
         "columns": {
+            "id": "Category id",
             "name": "Category name",
         },
     },
