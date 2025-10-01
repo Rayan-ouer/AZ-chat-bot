@@ -5,7 +5,8 @@ table_info = {
             "id": "Product ID",
             "code": "Product code",
             "name": "Name",
-            "category_id": "Category Product ID",
+            "category_id": "item_categories.id",
+            "brand_id": "brands.id",
             "cost_price": "Cost",
             "sale_price": "Price",
             "stock_min": "Min stock",
@@ -92,6 +93,13 @@ table_info = {
             "total_ttc": "Total TTC",
             "tva_rate": "VAT %",
             "invoiced": "Invoiced (1/0)",
+        },
+    },
+    "brands": {
+        "description": "Product brands",
+        "columns": {
+            "id": "Brand ID",
+            "name": "Brand name",
         },
     },
     "item_categories": {
