@@ -131,26 +131,23 @@ class IAModel:
         if not self._engine:
             raise RuntimeError("Le moteur SQL doit être défini avant d'exécuter la requête.")
 
-        data = []
-        all_data = []
-        raw_response = self.getResponse(variables)
+        excluded_column = {"updated_at", "created_at", "description"}
         max_rows = 10
+        all_data = []
 
-        if isinstance(raw_response, AIMessage):
-            raw_request = raw_response.content
-        else:
-            raw_request = str(raw_response)
-
+        raw_response = self.getResponse(variables)
+        raw_request = raw_response.content if isinstance(raw_response, AIMessage) else str(raw_response)
         cleaned_request = self.cleanSQLRequest(raw_request)
 
         if not cleaned_request:
-            return data, raw_request, False
+            return [], raw_request, False
 
         array_requests = cleaned_request.split(";")
 
         try:
             with self._engine.connect() as conn:
                 for request in array_requests:
+                    request = request.strip()
                     if not request:
                         continue
                     request += ";"
@@ -158,7 +155,17 @@ class IAModel:
                     result = conn.execute(request)
                     rows = result.fetchall()
                     truncated_rows = rows[:max_rows]
-                    formatted = "\n".join([",".join(str(value) for value in row.values()) for row in truncated_rows])
+
+                    filtered_rows = [
+                        {k: v for k, v in row._mapping.items() if k not in excluded_column}
+                        for row in truncated_rows
+                    ]
+
+                    formatted = "\n".join([
+                        ",".join(str(value) for value in row.values())
+                        for row in filtered_rows
+                    ])
+
                     all_data.append(formatted)
 
             final_data = "\n".join(all_data)
@@ -167,4 +174,4 @@ class IAModel:
 
         except Exception as e:
             print(f"Erreur SQL : {e}")
-            return data, cleaned_request, False
+            return [], cleaned_request, False
