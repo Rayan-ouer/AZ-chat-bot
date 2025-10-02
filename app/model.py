@@ -143,13 +143,16 @@ class IAModel:
         
         if not cleaned_request:
             return data, raw_request, False
-
+        array_requests = cleaned_request.split(";")
         try:
             with self._engine.connect() as conn:
-                result = conn.execute(text(cleaned_request))
-                data = result.fetchall()
-                data = [dict(row._mapping) for row in data]
-            return data, cleaned_request, True
+                for request in array_requests:
+                    full_request = request + ";"
+                    print("Request : ", full_request)
+                    result = conn.execute(full_request)
+                    data = result.fetchall()
+                    data = [dict(row._mapping) for row in data]
+                return data, cleaned_request, True
         except Exception as e:
             print(f"Erreur SQL : {e}")
             return data, cleaned_request, False
