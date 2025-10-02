@@ -23,6 +23,23 @@ def getBodyStr(sentence: str, start: str, end: str):
     return " ".join(res)
 
 
+def truncate_text_blocks(blocks: list[str], max_chars: int, separator: str, show_summary: bool) -> str:
+    final_chunks = []
+    current_size = 0
+
+    for chunk in blocks:
+        chunk_size = len(chunk) + len(separator)
+        if current_size + chunk_size > max_chars:
+            break
+        final_chunks.append(chunk)
+        current_size += chunk_size
+
+    result = separator.join(final_chunks)
+    if show_summary and len(final_chunks) < len(blocks):
+        result += f"\n...({len(blocks) - len(final_chunks)} blocs tronqués)"
+    return result
+
+
 def sqlRequestMiddleware(responsesql: str):
     parsed_sql = sqlparse.format(responsesql, reindent=True, keyword_case="upper")
     replaced_sql = getBodyStr(parsed_sql, "SELECT", ";")
@@ -168,7 +185,7 @@ class IAModel:
 
                     all_data.append(formatted)
 
-            final_data = "\n".join(all_data)
+            final_data = truncate_text_blocks(all_data, 4096, "\n", False)
             print(final_data)
             return final_data, cleaned_request, True
 
