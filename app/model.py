@@ -126,35 +126,45 @@ class IAModel:
 
     def cleanSQLRequest(self, request) -> Optional[str]:
         return sqlRequestMiddleware(request)
-
+    
     def runSQLRequest(self, variables: Dict[str, Any]):
         if not self._engine:
             raise RuntimeError("Le moteur SQL doit être défini avant d'exécuter la requête.")
 
         data = []
+        all_data = []
         raw_response = self.getResponse(variables)
-        
+        max_rows = 10
+
         if isinstance(raw_response, AIMessage):
             raw_request = raw_response.content
         else:
             raw_request = str(raw_response)
-            
+
         cleaned_request = self.cleanSQLRequest(raw_request)
-        
+
         if not cleaned_request:
             return data, raw_request, False
+
         array_requests = cleaned_request.split(";")
+
         try:
             with self._engine.connect() as conn:
                 for request in array_requests:
-                    full_request = request + ";"
-                    print("Request : ", full_request)
-                    result = conn.execute(full_request)
-                    data = result.fetchall()
-                    data = [dict(row._mapping) for row in data]
-                return data, cleaned_request, True
+                    if not request:
+                        continue
+                    request += ";"
+                    print(f"Request: {request}")
+                    result = conn.execute(request)
+                    rows = result.fetchall()
+                    truncated_rows = rows[:max_rows]
+                    formatted = "\n".join([",".join(str(value) for value in row.values()) for row in truncated_rows])
+                    all_data.append(formatted)
+
+            final_data = "\n".join(all_data)
+            print(final_data)
+            return final_data, cleaned_request, True
+
         except Exception as e:
             print(f"Erreur SQL : {e}")
             return data, cleaned_request, False
-
-    
