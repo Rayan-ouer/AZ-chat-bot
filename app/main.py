@@ -97,14 +97,14 @@ async def callBot(question: Question, response: Response):
             return {
                 "status": "fail",
                 "response": (
-                    "❗ Je n’ai pas pu générer une recherche valide à partir de votre demande.\n\n"
-                    "Cela peut venir d’un manque de précision ou d’un mot-clé absent.\n\n"
-                    "🔍 Pour m’aider à mieux répondre, vous pouvez reformuler votre question en précisant :\n\n"
-                    "    • Le type d’information que vous cherchez (ex : produits livrés, commandes en attente, chiffre d’affaires)\n"
-                    "    • Une période ou un filtre éventuel (ex : ce mois-ci, pour un client précis)\n\n"
+                    "❗ Je n'ai pas pu générer une recherche valide à partir de votre demande.\n\n"
+                    "Cela peut venir d'un manque de précision ou d'un mot-clé absent.\n\n"
+                    "🔍 Pour m'aider à mieux répondre, vous pouvez reformuler votre question en précisant :\n\n"
+                    "    • Le type d'information que vous cherchez (ex : produits livrés, commandes en attente, chiffre d'affaires)\n"
+                    "    • Une article ou un filtre éventuel (ex : \"catégorie filtration\", pour un client précis)\n\n"
                     "💡 Exemples de questions efficaces :\n\n"
-                    "    • “Quels sont les produits les plus rentables ce mois-ci ?”\n"
-                    "    • “Combien de commandes ont été livrées pour le client Dupont ?”\n\n"
+                    "    • \"Quels sont les produits les plus rentables ce mois-ci ?\"\n"
+                    "    • \"Quels articles sont pratiquement en rupture de stock?\"\n\n"
                     "Je suis là pour vous aider à transformer votre demande en recherche métier claire 😊"
                     )
                     }
