@@ -155,17 +155,51 @@ table_info = {
         },
     },
     "customers": {
-    "description": "Customer accounts and commercial details",
-    "columns": {
-        "id": "Customer ID",
-        "code": "Unique customer code",
-        "name": "Full name",
-        "city": "City",
-        "country": "Country",
-        "solde": "Current balance",
-        "plafond": "Credit limit",
-        "risque": "Risk level",
-        "blocked": "Blocked status (1=Yes, 0=No)"
+        "description": "Customer accounts and commercial details",
+        "columns": {
+            "id": "Customer ID",
+            "code": "Unique customer code",
+            "name": "Full name",
+            "city": "City",
+            "country": "Country",
+            "solde": "Current balance",
+            "plafond": "Credit limit",
+            "risque": "Risk level",
+            "blocked": "Blocked status (1=Yes, 0=No)"
+        },
+    },
+    "purchase_invoices": {
+        "description": "Supplier purchase invoices and payment tracking",
+        "columns": {
+            "id": "Invoice ID",
+            "supplier_id": "Supplier reference ID",
+            "numdoc": "Invoice document number",
+            "invoice_date": "Invoice date",
+            "status": "Invoice status (e.g. brouillon, validé)",
+            "paid": "Payment status (1=Paid, 0=Unpaid)",
+            "total_ht": "Total amount before tax",
+            "total_ttc": "Total amount including tax",
+            "tva_rate": "VAT rate applied",
+            "notes": "Additional notes or comments",
+            "supplier_invoice_file": "Filename of the supplier's invoice document",
+            "type": "Invoice type (e.g. achat, service)"
+        },
+    },
+    "purchase_invoice_lines": {
+        "description": "Detailed lines of purchase invoices including articles and amounts",
+        "columns": {
+            "id": "Line ID",
+            "purchase_invoice_id": "Associated purchase invoice ID",
+            "article_code": "Article or product code",
+            "purchase_order_id": "Linked purchase order ID",
+            "purchase_return_id": "Linked purchase return ID",
+            "quantity": "Quantity purchased",
+            "unit_price_ht": "Unit price before tax",
+            "remise": "Discount applied on the line",
+            "total_ligne_ht": "Line total before tax",
+            "tva": "VAT rate for the line",
+            "prix_ttc": "Line total including tax",
+            "description": "Line description or product label"
         },
     },
 }
