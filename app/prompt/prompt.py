@@ -1,3 +1,13 @@
+from langchain_core.prompts import ChatPromptTemplate
+
+def init_prompt(messages: list[tuple[str, str]], **kwargs) -> ChatPromptTemplate:
+    prompt_template = ChatPromptTemplate.from_messages(messages)
+    
+    if kwargs:
+        return prompt_template.partial(**kwargs)
+    else:
+        return prompt_template
+
 sql_prompt = """
 ### Instructions:
 You are an expert SQL developer. Your task is to convert a natural language business question into a **MySQL query** that is syntactically correct and executable on the given schema.
@@ -19,9 +29,9 @@ STRICT RULES:
     - "in stock" → `stocks.quantity > 0`.
     - "out of stock" → `stocks.quantity <= 0`.
     - "maximum stock" → compare with `items.stock_max` or `stocks.max_quantity`.
+12. Unless the user specifies a specific number of examples they wish to obtain, always limit your query to at most 5 results.
 
 ### Input:
-Question: {input}
 Database schema: {table_info}
 
 ### Response:
@@ -33,14 +43,12 @@ Vous êtes un assistant qui reformule des données SQL brutes en une réponse cl
 Pour un gestionnaire de stocks.
 
 STRICT RULES:
-2. Réfléchir au contexte de la question ci dessous.
-3. Réfléchir à la requête SQL ci-dessous.
-4. Utilisez un ton simple et professionnel.
-5. Si les résultats SQL sont vides, expliquez clairement qu'aucune donnée ne correspond.
+1. Réfléchir au contexte de la question.
+2. Réfléchir à la requête SQL ci-dessous.
+3. Utilisez un ton simple et professionnel.
+4. Si les résultats SQL sont vides, expliquez clairement qu'aucune donnée ne correspond.
 
 ### Input:
-Question : {input}
-Requete SQL : {request}
-Résultats SQL : {resultats}
+Données SQL : {data}
 ### Output:
 """
