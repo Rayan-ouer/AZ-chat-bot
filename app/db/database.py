@@ -53,6 +53,8 @@ def extract_content(result: CursorResult):
 def execute_queries(engine: Engine, query_list: list[str]):
     results = []
 
+    if not query_list:
+        return results
     try:
         with engine.connect() as connection:
             for query in query_list:

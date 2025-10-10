@@ -47,20 +47,50 @@ app = initializeModel()
 @app.post("/predict", status_code=200)
 async def callBot(question: Question, response: Response):
     session_id = question.session_id
-    result = app.state.sql_agent.get_response_with_memory(session_id, question.question, True)
-    queries = clean_sql_query(result.content)
-    data = execute_queries(app.state.sql_agent._engine, queries)
+    user_question = question.question
 
-    logging.info(f"SQL Query: {queries}")
-    logging.info(f"Data: {str(data)}")
-    logging.info(f"History: {app.state.nlp_agent._memory.get_session_by_id(session_id)}")
+    try:
+        sql_result = app.state.sql_agent.get_response_with_memory(session_id, user_question)
+        queries = clean_sql_query(sql_result.content)
 
-    app.state.nlp_agent._memory = app.state.sql_agent._memory
-    final_response = app.state.nlp_agent.get_response_with_memory(session_id, user_question=None,
-        add_to_history=False,
-        dynamic_variables={"data": str(data)})
-    app.state.sql_agent._memory.reset_history(session_id, 3)
-    return {
-        "status": "success",
-        "response": str(final_response.content)
-    }
+        logging.info(f"SQL Query: {queries}")
+        
+        data = execute_queries(app.state.sql_agent._engine, queries)
+        logging.info(f"Data: {str(data)}")
+
+        final_response = app.state.nlp_agent.get_response_with_memory(
+            session_id=session_id,
+            user_question=user_question,
+            dynamic_variables={
+                "query": queries,
+                "data": str(data),
+            }
+        )
+
+        app.state.sql_agent._memory.rotate_history(session_id, 3)
+        app.state.nlp_agent._memory.rotate_history(session_id, 3)
+
+        logging.info(f"Final response: {final_response.content}")
+
+        return {
+            "status": "success",
+            "response": str(final_response.content)
+        }
+
+    except Exception as e:
+        logging.error(f"Erreur lors du traitement: {e}")
+        
+        error_response = app.state.nlp_agent.get_response_with_memory(
+            session_id=session_id,
+            user_question=user_question,
+            dynamic_variables={
+                "query": queries if 'queries' in locals() else "Aucune requête générée",
+                "data": str(e),
+            }
+        )
+
+        response.status_code = 500
+        return {
+            "status": "error",
+            "response": str(error_response.content)
+        }

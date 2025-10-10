@@ -49,6 +49,7 @@ STRICT RULES:
 4. Si les résultats SQL sont vides, expliquez clairement qu'aucune donnée ne correspond.
 
 ### Input:
+Requête SQL : {query}
 Données SQL : {data}
 ### Output:
 """

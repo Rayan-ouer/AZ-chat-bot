@@ -46,6 +46,17 @@ class ChatMemory:
         counter = self._counter_question[session_id]
         if counter >= max_question:
             self.clear_history_by_id(session_id)
+    
+    def rotate_history(self, session_id: int, max_questions: int):
+        if session_id not in self._conversation:
+            return
+        history = self._conversation[session_id]
+        total_messages = len(history.messages)
+        max_messages = max_questions * 2
+        if total_messages > max_messages:
+            messages_to_keep = history.messages[-max_messages:]
+            history.messages = messages_to_keep
+            self._counter_question[session_id] = max_questions
 
 class IAModel:
     def __init__(self):
@@ -85,7 +96,7 @@ class IAModel:
         chain = prompt_copy | self._model
         result = chain.invoke(dynamic_variables or {}, **invoke_kwargs)
 
-        if user_question is not None and add_to_history:
+        if add_to_history:
             self._memory.add_ai_message(session_id, result.content)
 
         return result
