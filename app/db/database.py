@@ -54,13 +54,13 @@ def add_limit_select(query: str, max_limit: Optional[int]) -> str:
     return query.strip() + ';'
 
 
-def clean_sql_query(query: str) -> list[str]:
+def clean_sql_query(query: str, max_limit: Optional[int]) -> list[str]:
     query = sqlparse.format(query, reindent=True, keyword_case="upper")
     clean_query = get_element_str(query, "SELECT", ";")
     if not clean_query:
         return None
     queries = clean_query.split(";")
-    return [add_limit_select(q.strip(), 20) for q in queries if q.strip()]
+    return [add_limit_select(q.strip(), max_limit) for q in queries if q.strip()]
 
 def extract_content(result: CursorResult):
     try:
