@@ -1,5 +1,7 @@
 import os
+import re
 import sqlparse
+from typing import Optional
 from urllib.parse import quote_plus
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import Engine, CursorResult
@@ -33,12 +35,32 @@ def get_element_str(sentence: str, start: str, end: str) -> str:
             switch = False
     return " ".join(res)
 
+def add_limit_select(query: str, max_limit: Optional[int]) -> str:
+    if max_limit is None:
+        return query.strip().rstrip(';') + ';'
+    query = re.sub(r';\s*$', '', query)
+    limit_match = re.search(r'\bLIMIT\s+(\d+)', query, re.IGNORECASE)
+    if limit_match:
+        existing_limit = int(limit_match.group(1))
+        if existing_limit > max_limit:
+            query = re.sub(
+                r'\bLIMIT\s+\d+',
+                f'LIMIT {max_limit}',
+                query,
+                flags=re.IGNORECASE
+            )
+    else:
+        query += f' LIMIT {max_limit}'
+    return query.strip() + ';'
+
+
 def clean_sql_query(query: str) -> list[str]:
     query = sqlparse.format(query, reindent=True, keyword_case="upper")
     clean_query = get_element_str(query, "SELECT", ";")
     if not clean_query:
         return None
-    return clean_query.split(";")
+    queries = clean_query.split(";")
+    return [add_limit_select(q.strip(), 20) for q in queries if q.strip()]
 
 def extract_content(result: CursorResult):
     try:
