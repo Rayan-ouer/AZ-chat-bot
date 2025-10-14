@@ -71,7 +71,8 @@ async def callBot(question: Question, response: Response):
 
         app.state.sql_agent._memory.rotate_history(session_id, 3)
         app.state.nlp_agent._memory.rotate_history(session_id, 3)
-
+        logging.info(f"SQL Agent history : {app.state.sql_agent._memory.get_session_by_id(session_id)}")
+        logging.info(f"NLP Agent history : {app.state.nlp_agent._memory.get_session_by_id(session_id)}")
         logging.info(f"Final response: {final_response.content}")
 
         return {
