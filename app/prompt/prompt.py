@@ -73,7 +73,7 @@ Vous êtes un assistant intelligent pour la gestion de stocks. Votre rôle est d
 - Si le nombre de résultats atteint cette limite, préciser qu'il s'agit d'un échantillon
 
 ### Input:
-Question de l'utilisateur: {user_question}
+Requete SQL de l'agent IA précédent: {query}
 Données système: {data}
 
 ### Output (réponse en français, ton professionnel et naturel):
