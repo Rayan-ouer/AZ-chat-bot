@@ -48,10 +48,11 @@ app = initializeModel()
 async def callBot(question: Question, response: Response):
     session_id = question.session_id
     user_question = question.question
+    max_result_limit = 50
 
     try:
         sql_result = app.state.sql_agent.get_response_with_memory(session_id, user_question)
-        queries = clean_sql_query(sql_result.content)
+        queries = clean_sql_query(sql_result.content, max_result_limit)
 
         logging.info(f"SQL Query: {queries}")
         
@@ -64,6 +65,7 @@ async def callBot(question: Question, response: Response):
             dynamic_variables={
                 "query": queries,
                 "data": str(data),
+                "result_limit": max_result_limit
             }
         )
 
@@ -86,6 +88,7 @@ async def callBot(question: Question, response: Response):
             dynamic_variables={
                 "query": queries if 'queries' in locals() else "Aucune requête générée",
                 "data": str(e),
+                "result_limit": max_result_limit
             }
         )
 
