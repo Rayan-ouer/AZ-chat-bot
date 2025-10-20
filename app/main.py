@@ -1,11 +1,16 @@
 import os
+import time
 import logging
+import os
 from dotenv import load_dotenv
+from typing import Dict
 from fastapi import FastAPI, HTTPException, Response, status
 from app.schemas.question import Question
 from app.services.factories import set_sql_agent, set_nlp_agent
 from app.db.database import *
 from app.db.database import create_engine_for_sql_database
+from app.tasks.jobs import resetAgentsMemory, check_last_request_per_user
+from app.tasks.scheduler import create_scheduler, add_memory_check_job, start_scheduler, stop_scheduler
 
 load_dotenv()
 
@@ -14,15 +19,15 @@ logging.basicConfig(
     format="%(asctime)s %(levelname)s %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
 )
-
 def initializeModel():
     app = FastAPI(
-        title="NegoBot Model API",
-        description="Model NLP for Nego bot",
+        title="API AZ Stock Management Chatbot",
+        description="API for Stock Management Chatbot using SQL and NLP Agents",
         version="0.1",
     )
 
     async def startup_event():
+        app.state.last_request_per_user = {}
         logging.info("Launch...")
         try :
             engine = create_engine_for_sql_database("mysql+pymysql:")
@@ -32,10 +37,27 @@ def initializeModel():
         app.state.sql_agent = set_sql_agent(engine)
         app.state.nlp_agent = set_nlp_agent(engine)
 
+        try:
+            sched = create_scheduler()
+            add_memory_check_job(sched, check_last_request_per_user, app, 1)
+            await start_scheduler(sched)
+            app.state._scheduler = sched
+        except Exception as e:
+            logging.error(f"Failed to initialize scheduler: {e}")
+
     async def shutdown_event():
-        logging.info("Chutting down...")
-        app.state.sql_agent._memory.clear_all_sessions()
-        app.state.nlp_agent._memory.clear_all_sessions()
+        try:
+            sched = getattr(app.state, "_scheduler", None)
+            if sched is not None:
+                stop_scheduler(sched)
+        except Exception as e:
+            logging.error(f"Error stopping scheduler: {e}")
+        try:
+            resetAgentsMemory(app)
+        except Exception as e:
+            logging.error(f"Error resetting agents memory on shutdown: {e}")
+
+        logging.info("Shutdown complete.")
 
     app.add_event_handler("startup", startup_event)
     app.add_event_handler("shutdown", shutdown_event)
@@ -44,12 +66,14 @@ def initializeModel():
 
 app = initializeModel()
 
+
 @app.post("/predict", status_code=200)
 async def callBot(question: Question, response: Response):
     session_id = question.session_id
     user_question = question.question
     max_result_limit = 50
-
+    
+    app.state.last_request_per_user[session_id] = int(time.time())
     try:
         sql_result = app.state.sql_agent.get_response_with_memory(session_id, user_question)
         queries = clean_sql_query(sql_result.content, max_result_limit)
