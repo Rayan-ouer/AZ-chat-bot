@@ -1,7 +1,7 @@
 import os
 import re
 import sqlparse
-from typing import Optional
+from typing import Optional, Any
 from urllib.parse import quote_plus
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import Engine, CursorResult
@@ -62,15 +62,15 @@ def clean_sql_query(query: str, max_limit: Optional[int]) -> list[str]:
     queries = clean_query.split(";")
     return [add_limit_select(q.strip(), max_limit) for q in queries if q.strip()]
 
-def extract_content(result: CursorResult):
+def extract_content(result: CursorResult) -> list[dict[str, Any]]:
     try:
         rows = result.fetchall()
         if rows:
             return [dict(row._asdict()) for row in rows]
         else:
-            return {"status": "success", "rows_affected": result.rowcount}
+            return [{"status": "success", "rows_affected": result.rowcount}]
     except Exception:
-        return {"status": "success", "rows_affected": result.rowcount}
+        return [{"status": "success", "rows_affected": result.rowcount}]
 
 def execute_queries(engine: Engine, query_list: list[str]):
     results = []
