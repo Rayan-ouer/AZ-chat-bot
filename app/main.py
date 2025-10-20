@@ -82,9 +82,9 @@ async def callBot(question: Question, response: Response):
         
         data = execute_queries(app.state.sql_agent._engine, queries)
         if isinstance(data, list) and len(data) == 1 and data[0].get("rows_affected", 0) == 0:
-            data = None
+            data = {"result": "no matching item"}
         elif isinstance(data, dict) and data.get("rows_affected", 0) == 0:
-            data = None
+            data = {"result": "no matching item"}
         final_response = app.state.nlp_agent.get_response_with_memory(
             session_id=session_id,
             user_question=user_question,
