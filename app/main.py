@@ -81,8 +81,10 @@ async def callBot(question: Question, response: Response):
         logging.info(f"SQL Query: {queries}")
         
         data = execute_queries(app.state.sql_agent._engine, queries)
-        logging.info(f"Data: {str(data)}")
-
+        if isinstance(data, list) and len(data) == 1 and data[0].get("rows_affected", 0) == 0:
+            data = None
+        elif isinstance(data, dict) and data.get("rows_affected", 0) == 0:
+            data = None
         final_response = app.state.nlp_agent.get_response_with_memory(
             session_id=session_id,
             user_question=user_question,
