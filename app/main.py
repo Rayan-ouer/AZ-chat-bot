@@ -77,7 +77,8 @@ async def callBot(question: Question, response: Response):
     try:
         sql_result = app.state.sql_agent.get_response_with_memory(session_id, user_question)
         queries = clean_sql_query(sql_result.content, max_result_limit)
-
+        data = execute_queries(app.state.sql_agent._engine, queries)
+        
         logging.info(f"SQL Query: {queries}")
         if (isinstance(data, list)
             and len(data) == 1
