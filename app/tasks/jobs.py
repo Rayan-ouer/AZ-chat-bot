@@ -2,6 +2,7 @@ import time
 import os
 import logging
 from typing import Optional
+from app.services.factories import set_nlp_agent, set_sql_agent
 
 def resetAgentsMemory(app) -> None:
     try:
@@ -12,7 +13,6 @@ def resetAgentsMemory(app) -> None:
         logging.info("Agents memory reset successfully.")
     except Exception as e:
         logging.error(f"Error resetting agents memory: {e}")
-
 
 def reset_memory_user(app, session_id: int) -> None:
     logging.info(f"Resetting memory for user: {session_id}...")
@@ -45,3 +45,13 @@ def check_last_request_per_user(app, timeout_seconds: Optional[int] = None) -> N
                 )
     except Exception as e:
         logging.error(f"Error checking last request per user: {e}")
+
+def reset_llm(app):
+    try:
+        engine = app.state.sql_agent._engine
+        app.state.sql_agent = set_sql_agent(engine)
+        app.state.nlp_agent = set_nlp_agent()
+        logging.info("LLM agent has been reset.")
+    except Exception as e:
+        logging.error(f"Failed to reset LLM agent: {e}")
+

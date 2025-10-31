@@ -9,8 +9,8 @@ from app.schemas.question import Question
 from app.services.factories import set_sql_agent, set_nlp_agent
 from app.db.database import *
 from app.db.database import create_engine_for_sql_database
-from app.tasks.jobs import resetAgentsMemory, check_last_request_per_user
-from app.tasks.scheduler import create_scheduler, add_memory_check_job, start_scheduler, stop_scheduler
+from app.tasks.jobs import resetAgentsMemory, check_last_request_per_user, reset_llm
+from app.tasks.scheduler import create_scheduler, add_memory_check_job, add_llm_reset_job, start_scheduler, stop_scheduler
 
 load_dotenv()
 
@@ -35,11 +35,12 @@ def initializeModel():
             logging.error(f"Erreur connexion DB: {e}")
 
         app.state.sql_agent = set_sql_agent(engine)
-        app.state.nlp_agent = set_nlp_agent(engine)
+        app.state.nlp_agent = set_nlp_agent()
 
         try:
             sched = create_scheduler()
             add_memory_check_job(sched, check_last_request_per_user, app, 1)
+            add_llm_reset_job(sched, reset_llm, app)
             await start_scheduler(sched)
             app.state._scheduler = sched
         except Exception as e:

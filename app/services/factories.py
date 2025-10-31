@@ -18,7 +18,7 @@ def set_sql_agent(engine: Engine) -> IAModel:
         )
     return sql_agent
 
-def set_nlp_agent(engine: Engine) -> IAModel:
+def set_nlp_agent() -> IAModel:
     nlp_agent = IAModel()
     api_key = os.getenv("GROQ_API_KEY")
     if not api_key:
