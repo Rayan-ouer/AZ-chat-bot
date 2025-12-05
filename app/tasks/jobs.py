@@ -4,7 +4,7 @@ import logging
 from typing import Optional
 from app.services.factories import set_nlp_agent, set_sql_agent
 
-def resetAgentsMemory(app) -> None:
+def reset_agents_memory(app) -> None:
     try:
         if hasattr(app.state, "sql_agent"):
             app.state.sql_agent._memory.clear_all_sessions()

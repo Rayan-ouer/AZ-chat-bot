@@ -1,7 +1,6 @@
 import os
 import time
 import logging
-import os
 from dotenv import load_dotenv
 from typing import Dict
 from fastapi import FastAPI, HTTPException, Response, status
@@ -9,7 +8,7 @@ from app.schemas.question import Question
 from app.services.factories import set_sql_agent, set_nlp_agent
 from app.db.database import *
 from app.db.database import create_engine_for_sql_database
-from app.tasks.jobs import resetAgentsMemory, check_last_request_per_user, reset_llm
+from app.tasks.jobs import reset_agents_memory, check_last_request_per_user, reset_llm
 from app.tasks.scheduler import create_scheduler, add_memory_check_job, add_llm_reset_job, start_scheduler, stop_scheduler
 
 load_dotenv()
@@ -54,7 +53,7 @@ def initializeModel():
         except Exception as e:
             logging.error(f"Error stopping scheduler: {e}")
         try:
-            resetAgentsMemory(app)
+            reset_agents_memory(app)
         except Exception as e:
             logging.error(f"Error resetting agents memory on shutdown: {e}")
 
@@ -67,8 +66,7 @@ def initializeModel():
 
 app = initializeModel()
 
-
-@app.post("/predict", status_code=200)
+@app.post("/predict")
 async def callBot(question: Question, response: Response):
     session_id = question.session_id
     user_question = question.question
