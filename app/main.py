@@ -1,15 +1,24 @@
-import os
 import time
 import logging
 from dotenv import load_dotenv
-from typing import Dict
-from fastapi import FastAPI, HTTPException, Response, status
+from fastapi import FastAPI, Response
+from starlette.concurrency import run_in_threadpool
 from app.schemas.question import Question
 from app.services.factories import set_sql_agent, set_nlp_agent
-from app.db.database import *
-from app.db.database import create_engine_for_sql_database
+from app.db.database import (
+    create_engine_for_sql_database,
+    verify_and_extract_sql_query,
+    execute_queries,
+    is_empty_result,
+)
 from app.tasks.jobs import reset_agents_memory, check_last_request_per_user, reset_llm
-from app.tasks.scheduler import create_scheduler, add_memory_check_job, add_llm_reset_job, start_scheduler, stop_scheduler
+from app.tasks.scheduler import (
+    create_scheduler,
+    add_memory_check_job,
+    add_llm_reset_job,
+    start_scheduler,
+    stop_scheduler,
+)
 
 load_dotenv()
 
@@ -27,11 +36,12 @@ def initializeModel():
 
     async def startup_event():
         app.state.last_request_per_user = {}
-        logging.info("Launch...")
-        try :
+        logging.info("Application startup initiated...")
+        try:
             engine = create_engine_for_sql_database("mysql+pymysql:")
         except Exception as e:
-            logging.error(f"Erreur connexion DB: {e}")
+            logging.exception("Database engine initialization failed: %s", e)
+            raise RuntimeError("Cannot initialize database engine") from e
 
         app.state.sql_agent = set_sql_agent(engine)
         app.state.nlp_agent = set_nlp_agent()
@@ -42,8 +52,10 @@ def initializeModel():
             add_llm_reset_job(sched, reset_llm, app)
             await start_scheduler(sched)
             app.state._scheduler = sched
+            logging.info("Scheduler initialized successfully")
         except Exception as e:
-            logging.error(f"Failed to initialize scheduler: {e}")
+            logging.exception("Failed to initialize scheduler: %s", e)
+            raise RuntimeError("Scheduler initialization failed") from e
 
     async def shutdown_event():
         try:
@@ -51,11 +63,11 @@ def initializeModel():
             if sched is not None:
                 stop_scheduler(sched)
         except Exception as e:
-            logging.error(f"Error stopping scheduler: {e}")
+            logging.error("Error stopping scheduler: %s", e)
         try:
             reset_agents_memory(app)
         except Exception as e:
-            logging.error(f"Error resetting agents memory on shutdown: {e}")
+            logging.error("Error resetting agents memory on shutdown: %s", e)
 
         logging.info("Shutdown complete.")
 
@@ -74,53 +86,57 @@ async def callBot(question: Question, response: Response):
     
     app.state.last_request_per_user[session_id] = int(time.time())
     try:
-        sql_result = app.state.sql_agent.get_response_with_memory(session_id, user_question)
-        queries = clean_sql_query(sql_result.content, max_result_limit)
-        data = execute_queries(app.state.sql_agent._engine, queries)
-        
-        logging.info(f"SQL Query: {queries}")
-        if (isinstance(data, list)
-            and len(data) == 1
-            and isinstance(data[0], dict)
-            and "rows_affected" in data[0]
-            and data[0]["rows_affected"] == 0
-        ): data = {"result": "no matching item"}
-        final_response = app.state.nlp_agent.get_response_with_memory(
-            session_id=session_id,
-            user_question=user_question,
-            dynamic_variables={
-                "query": queries,
-                "data": str(data),
-                "result_limit": max_result_limit
-            }
+        sql_result = await run_in_threadpool(
+            lambda: app.state.sql_agent.get_response_with_memory(session_id, user_question)
         )
+        queries = verify_and_extract_sql_query(sql_result.content, max_result_limit)
+        data = await run_in_threadpool(
+            lambda: execute_queries(app.state.sql_agent.get_engine(), queries)
+        )
+        if is_empty_result(data):
+            data = {"result": "no matching item"}
 
-        app.state.sql_agent._memory.rotate_history(session_id, 3)
-        app.state.nlp_agent._memory.rotate_history(session_id, 3)
-        logging.info(f"SQL Agent history : {app.state.sql_agent._memory.get_session_by_id(session_id)}")
-        logging.info(f"NLP Agent history : {app.state.nlp_agent._memory.get_session_by_id(session_id)}")
-        logging.info(f"Final response: {final_response.content}")
-
+        final_response = await run_in_threadpool(
+            lambda: app.state.nlp_agent.get_response_with_memory(
+                session_id=session_id,
+                user_question=user_question,
+                dynamic_variables={
+                    "query": queries,
+                    "data": str(data),
+                    "result_limit": max_result_limit,
+                },
+            )
+        )
+        app.state.sql_agent._memory.rotate_history(session_id, max_questions=3)
+        app.state.nlp_agent._memory.rotate_history(session_id, max_questions=3)
         return {
             "status": "success",
-            "response": str(final_response.content)
+            "response": str(final_response.content),
         }
 
     except Exception as e:
-        logging.error(f"Erreur lors du traitement: {e}")
-        
-        error_response = app.state.nlp_agent.get_response_with_memory(
-            session_id=session_id,
-            user_question=user_question,
-            dynamic_variables={
-                "query": queries if 'queries' in locals() else "Aucune requête générée",
-                "data": str(e),
-                "result_limit": max_result_limit
+        logging.exception("Error processing request for session %s: %s", session_id, e)
+        try:
+            error_response = await run_in_threadpool(
+                lambda: app.state.nlp_agent.get_response_with_memory(
+                    session_id=session_id,
+                    user_question=user_question,
+                    dynamic_variables={
+                        "query": queries if 'queries' in locals() else "No query generated",
+                        "data": str(e),
+                        "result_limit": max_result_limit,
+                    },
+                )
+            )
+            response.status_code = 200
+            return {
+                "status": "success",
+                "response": str(error_response.content),
             }
-        )
-
-        response.status_code = 500
-        return {
-            "status": "error",
-            "response": str(error_response.content)
-        }
+        except Exception as nlp_error:
+            logging.exception("NLP agent error after SQL failure: %s", nlp_error)
+            response.status_code = 500
+            return {
+                "status": "error",
+                "response": "Internal server error. Please retry later.",
+            }

@@ -74,6 +74,9 @@ class IAModel:
     def set_engine(self, engine):
         self._engine = engine
     
+    def get_engine(self):
+        return self._engine
+    
     def get_response(self, variables: Dict[str, Any]):
         if not self._model or not self._prompt:
             raise RuntimeError("The template and prompt must be defined before generating a response.")
@@ -81,9 +84,13 @@ class IAModel:
         chain = self._prompt | self._model
         return chain.invoke(variables)
     
-    def get_response_with_memory(self, session_id: int, user_question: Optional[str] = None, add_to_history: bool = True,
-                                 dynamic_variables: Optional[Dict[str, Any]] = None, **invoke_kwargs
+    def get_response_with_memory(self, session_id: int,
+                                 user_question: Optional[str] = None,
+                                 add_to_history: bool = True,
+                                 dynamic_variables: Optional[Dict[str, Any]] = None,
+                                 **invoke_kwargs
         ) -> AIMessage:
+    
         if user_question is not None and add_to_history:
             self._memory.add_user_message(session_id, user_question)
 

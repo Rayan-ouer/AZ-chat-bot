@@ -54,11 +54,11 @@ def add_limit_select(query: str, max_limit: Optional[int]) -> str:
     return query.strip() + ';'
 
 
-def clean_sql_query(query: str, max_limit: Optional[int]) -> list[str]:
+def verify_and_extract_sql_query(query: str, max_limit: Optional[int]) -> list[str]:
     query = sqlparse.format(query, reindent=True, keyword_case="upper")
     clean_query = get_element_str(query, "SELECT", ";")
     if not clean_query:
-        return None
+        return []
     queries = clean_query.split(";")
     return [add_limit_select(q.strip(), max_limit) for q in queries if q.strip()]
 
@@ -72,7 +72,7 @@ def extract_content(result: CursorResult) -> list[dict[str, Any]]:
     except Exception:
         return [{"status": "success", "rows_affected": result.rowcount}]
 
-def execute_queries(engine: Engine, query_list: list[str]):
+def execute_queries(engine: Engine, query_list: list[str]) -> list[str]:
     results = []
 
     if not query_list:
@@ -93,3 +93,9 @@ def execute_queries(engine: Engine, query_list: list[str]):
     except Exception as e:
         print(f"Erreur lors de l'exécution des requêtes: {e}")
         raise
+
+def is_empty_result(data: list[str]) -> bool:
+    if not isinstance(data, list) or len(data) != 1:
+        return False
+    row = data[0]
+    return isinstance(row, dict) and row.get("rows_affected") == 0
