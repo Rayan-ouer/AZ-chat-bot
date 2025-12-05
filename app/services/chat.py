@@ -77,6 +77,9 @@ class IAModel:
     def get_engine(self):
         return self._engine
     
+    def get_memory(self):
+        return self._memory
+    
     def get_response(self, variables: Dict[str, Any]):
         if not self._model or not self._prompt:
             raise RuntimeError("The template and prompt must be defined before generating a response.")

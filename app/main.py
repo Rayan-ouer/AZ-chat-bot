@@ -27,7 +27,7 @@ logging.basicConfig(
     format="%(asctime)s %(levelname)s %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
 )
-def initializeModel():
+def initialize_app():
     app = FastAPI(
         title="API AZ Stock Management Chatbot",
         description="API for Stock Management Chatbot using SQL and NLP Agents",
@@ -76,10 +76,10 @@ def initializeModel():
 
     return app
 
-app = initializeModel()
+app = initialize_app()
 
 @app.post("/predict")
-async def callBot(question: Question, response: Response):
+async def get_ai_response(question: Question, response: Response):
     session_id = question.session_id
     user_question = question.question
     max_result_limit = 50
@@ -87,11 +87,11 @@ async def callBot(question: Question, response: Response):
     app.state.last_request_per_user[session_id] = int(time.time())
     try:
         sql_result = await run_in_threadpool(
-            lambda: app.state.sql_agent.get_response_with_memory(session_id, user_question)
+            app.state.sql_agent.get_response_with_memory(session_id, user_question)
         )
         queries = verify_and_extract_sql_query(sql_result.content, max_result_limit)
         data = await run_in_threadpool(
-            lambda: execute_queries(app.state.sql_agent.get_engine(), queries)
+            execute_queries(app.state.sql_agent.get_engine(), queries)
         )
         if is_empty_result(data):
             data = {"result": "no matching item"}
@@ -107,8 +107,8 @@ async def callBot(question: Question, response: Response):
                 },
             )
         )
-        app.state.sql_agent._memory.rotate_history(session_id, max_questions=3)
-        app.state.nlp_agent._memory.rotate_history(session_id, max_questions=3)
+        app.state.sql_agent.get_memory().rotate_history(session_id, max_questions=3)
+        app.state.nlp_agent.get_memory().rotate_history(session_id, max_questions=3)
         return {
             "status": "success",
             "response": str(final_response.content),
@@ -122,7 +122,7 @@ async def callBot(question: Question, response: Response):
                     session_id=session_id,
                     user_question=user_question,
                     dynamic_variables={
-                        "query": queries if 'queries' in locals() else "No query generated",
+                        "query": queries if 'queries' in locals() else ["No query generated"],
                         "data": str(e),
                         "result_limit": max_result_limit,
                     },
