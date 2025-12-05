@@ -87,11 +87,11 @@ async def get_ai_response(question: Question, response: Response):
     app.state.last_request_per_user[session_id] = int(time.time())
     try:
         sql_result = await run_in_threadpool(
-            app.state.sql_agent.get_response_with_memory(session_id, user_question)
+            lambda: app.state.sql_agent.get_response_with_memory(session_id, user_question)
         )
         queries = verify_and_extract_sql_query(sql_result.content, max_result_limit)
         data = await run_in_threadpool(
-            execute_queries(app.state.sql_agent.get_engine(), queries)
+            lambda: execute_queries(app.state.sql_agent.get_engine(), queries)
         )
         if is_empty_result(data):
             data = {"result": "no matching item"}
