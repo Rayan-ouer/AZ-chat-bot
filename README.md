@@ -550,6 +550,3 @@ Checks the API health status.
 
 **Rayan**
 - GitHub: [@Rayan-ouer](https://github.com/Rayan-ouer)
-
-**Rayan**
-- GitHub: [@Rayan-ouer](https://github.com/Rayan-ouer)
